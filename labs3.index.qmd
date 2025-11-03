@@ -1,16 +1,21 @@
 ---
-title: "Lab S3"
-author: "Olivia Kelly"
+project:
+  type: website
+
+website:
+  title: "GenomelabS3"
+  navbar:
+    left:
+      - text: "Home"
+        href: index.qmd
+      - text: "Lab S3"
+        href: lab_s3.qmd
+
 format:
   html:
+    theme: cosmo
     toc: true
     code-fold: true
-    embed-resources: true
-    theme: cosmos
-editor: visual
-execute:
-  echo: true
-freeze: auto
 ---
 
 # About Me
@@ -24,5 +29,3 @@ I am a current senior studying biology at the University of Massachusetts Amhers
 # Link to lab 7
 
 [Lab 7: COVID-19 Data Tidying and Visualization](https://jeffreyblanchard.github.io/PathoGen2025/labs/lab7_covid.html)
-
-\
