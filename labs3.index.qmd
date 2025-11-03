@@ -1,0 +1,28 @@
+---
+title: "Lab S3"
+author: "Olivia Kelly"
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+    theme: cosmos
+editor: visual
+execute:
+  echo: true
+freeze: auto
+---
+
+# About Me
+
+I am a current senior studying biology at the University of Massachusetts Amherst. I live in Massachusetts and I have two golden retrievers.
+
+# Photo
+
+![Dogs](https://goldendogfarm.com/cdn/shop/files/C99G1038_2048x.jpg?v=1700100052)
+
+# Link to lab 7
+
+[Lab 7: COVID-19 Data Tidying and Visualization](https://jeffreyblanchard.github.io/PathoGen2025/labs/lab7_covid.html)
+
+\
