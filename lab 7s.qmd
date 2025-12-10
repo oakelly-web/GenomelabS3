@@ -12,7 +12,7 @@ execute:
   message: false 
 ---
 
-### Background 
+### Background
 
 ```{r}
 library(neonUtilities)
