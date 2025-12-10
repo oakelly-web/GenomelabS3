@@ -1,0 +1,299 @@
+---
+title: "lab 13"
+author: "Olivia Kelly"
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+    theme: cosmos
+editor: visual
+execute:
+  echo: true
+freeze: auto
+---
+
+```{r}
+getwd()
+
+```
+
+```{r}
+list.files("..")              # what’s one level up?
+list.files("../data")         # does 'data' exist?
+list.files("../data/NEON_metadata")  # does this folder exist?
+
+
+
+```
+
+```{r}
+list.files("../data", recursive = TRUE)
+
+
+```
+
+```{r}
+library(tidyverse)
+library(knitr)
+library(janitor)
+library(DT)
+
+```
+
+```{r}
+iris_setosa <- iris |> 
+filter(Species == "setosa") |> 
+filter(Sepal.Length > 5)
+```
+
+```{r}
+library(knitr)
+kable(iris_setosa)
+```
+
+```{r}
+library(DT)
+datatable(iris_setosa)
+```
+
+```{r}
+datatable(
+  iris |> 
+    filter(Species == "setosa") |> 
+    filter(Sepal.Length > 5)
+)
+```
+
+```{r}
+iris_setosa <- iris |> 
+  filter(Species == "setosa") |> 
+  filter(Sepal.Length > 5)
+
+datatable(iris_setosa)
+```
+
+```{r}
+NEON_MAGs <- read_tsv("/work/pi_bio678_umass_edu/data_NEON/exported_img_bins_Gs0166454_NEON.tsv")
+
+```
+
+## 4. Co-occurrence & Network Analysis
+
+-   Microbial interaction networks: Build co-occurrence networks to identify potential ecological interactions.
+
+-   Module detection: Identify clusters of taxa that respond similarly to environmental factors.
+
+    ```{r}
+    colnames(NEON_MAGs)
+
+    ```
+
+```{r}
+library(tidyverse)
+library(DT)
+library(vegan)
+library(igraph)
+```
+
+### 1. Taxonomic profiling-
+
+```{r}
+library(tidyverse)
+
+NEON_MAGs %>%
+  count(`GTDB Taxonomy Lineage`) %>%
+  arrange(desc(n))
+
+
+
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+taxa_summary <- NEON_MAGs %>%
+  count(`Bin Lineage`, `GTDB Taxonomy Lineage`) %>%
+  group_by(`Bin Lineage`) %>%
+  mutate(rel_abundance = n / sum(n))
+
+ggplot(taxa_summary, aes(x = `Bin Lineage`, y = rel_abundance, fill = `GTDB Taxonomy Lineage`)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Relative Abundance of Taxa by Site",
+       y = "Relative Abundance", x = "Site")
+
+
+
+```
+
+```{r}
+library(dplyr)
+library(stringr)
+
+# Assume your taxonomy column is called "GTDB Taxonomy Lineage"
+NEON_MAGs_clean <- NEON_MAGs %>%
+  mutate(
+    phylum = str_split(`GTDB Taxonomy Lineage`, ";") %>% 
+             sapply(function(x) ifelse(length(x) >= 2, str_trim(x[2]), NA)),
+    class  = str_split(`GTDB Taxonomy Lineage`, ";") %>% 
+             sapply(function(x) ifelse(length(x) >= 3, str_trim(x[3]), NA))
+  )
+
+```
+
+```{r}
+NEON_MAGs_clean %>%
+  count(`Bin Lineage`, phylum) %>%
+  group_by(`Bin Lineage`) %>%
+  mutate(rel_abundance = n / sum(n)) %>%
+  ggplot(aes(x = `Bin Lineage`, y = rel_abundance, fill = phylum)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Relative Abundance of Phyla by Site",
+       y = "Relative Abundance", x = "Site")
+
+```
+
+```{r}
+unique(NEON_MAGs$`Bin Lineage`)
+
+```
+
+### 2. Alpha Diversity
+
+|  |  |  |  |
+|----|----|----|----|
+| Shannon (H) | Richness + evenness | 0 to \~4 (depends on community size) | Sensitive to rare species |
+| Simpson (D) | Dominance | 0 to 1 | Sensitive to common species |
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(vegan)
+
+# Build site × taxonomy table, dropping rows with missing site info
+site_taxa <- NEON_MAGs %>%
+  filter(!is.na(`Bin Lineage`), `Bin Lineage` != "") %>%
+  count(`Bin Lineage`, `GTDB Taxonomy Lineage`) %>%
+  pivot_wider(names_from = `GTDB Taxonomy Lineage`,
+              values_from = n,
+              values_fill = 0)
+
+# Convert to numeric matrix
+mat <- as.matrix(site_taxa[,-1])
+mode(mat) <- "numeric"
+rownames(mat) <- make.unique(site_taxa$`Bin Lineage`)
+
+# Compute alpha diversity: richness only
+diversity_metrics <- data.frame(
+  site     = rownames(mat),
+  richness = specnumber(mat)   # number of distinct taxa per site
+)
+
+# View results
+diversity_metrics
+
+
+```
+
+### 3. Beta diversity: Compare community composition between sites using Bray-Curtis or UniFrac distances.
+
+Perfect — now we’re moving from **alpha diversity (within-site)** to **beta diversity (between-site)**. Beta diversity compares how similar or different communities are across sites.
+
+### 🌱 Bray–Curtis Dissimilarity
+
+-   **Definition:** A measure of compositional dissimilarity between two sites based on counts or abundances.
+
+-   **Formula:** BCij=∑∣xik−xjk∣∑(xik+xjk) where xik and xjk are abundances of species k in sites i and j.
+
+-   **Range:** 0 (identical composition) → 1 (completely different).
+
+-   **Use case:** Works well for abundance data like MAG counts.
+
+### 🌱 UniFrac Distance
+
+-   **Definition:** A phylogenetic measure of beta diversity that compares communities based on the fraction of branch length unique to each community in a phylogenetic tree.
+
+-   **Types:**
+
+    -   **Unweighted UniFrac:** Considers only presence/absence.
+
+    -   **Weighted UniFrac:** Incorporates relative abundances.
+
+-   **Range:** 0 (identical phylogenetic composition) → 1 (completely distinct).
+
+-   **Use case:** Requires a phylogenetic tree of your MAGs or OTUs.
+
+```{r}
+library(vegan)
+
+# mat = site × taxa abundance matrix (already built earlier)
+# Compute Bray-Curtis dissimilarity
+bray_dist <- vegdist(mat, method = "bray")
+
+# Perform NMDS ordination
+nmds <- metaMDS(mat, distance = "bray", k = 2)
+
+# Plot NMDS
+plot(nmds, type = "t", main = "NMDS of Bray-Curtis Dissimilarity")
+
+```
+
+### 4. Ordination: Perform PCA, NMDS, or PCoA to visualize differences in microbial communities.
+
+PCA works best on normalized abundance data
+
+```{r}
+library(vegan)
+
+# Normalize abundances (Hellinger transform is common for community data)
+mat_hell <- decostand(mat, method = "hellinger")
+
+# PCA
+pca_res <- rda(mat_hell)
+
+# Plot PCA
+plot(pca_res, type = "n", main = "PCA of Microbial Communities")
+points(pca_res, display = "sites", col = "blue", pch = 19)
+
+```
+
+MDS is robust for ecological data and uses dissimilarity (e.g., Bray–Curtis).
+
+```{r}
+library(vegan)
+library(ggplot2)
+
+# Run NMDS on your site × taxa matrix
+nmds_res <- metaMDS(mat, distance = "bray", k = 2, trymax = 50)
+
+# Extract site scores (coordinates for each site in ordination space)
+site_scores <- as.data.frame(scores(nmds_res, display = "sites"))
+site_scores$site <- rownames(site_scores)
+
+# Plot NMDS
+ggplot(site_scores, aes(x = NMDS1, y = NMDS2)) +
+  geom_point(size = 3, color = "pink") +
+  theme_minimal() +
+  labs(title = "NMDS of Bray-Curtis Dissimilarity",
+       x = "NMDS1", y = "NMDS2")
+
+
+```
+
+PCoA is similar to PCA but works directly on a distance matrix.
+
+```{r}
+# Bray-Curtis distance
+bray_dist <- vegdist(mat, method = "bray")
+
+# PCoA
+pcoa_res <- cmdscale(bray_dist, k = 2, eig = TRUE)
+
+# Plot PCoA
+plot(pcoa_res$points[,1], pcoa_res$points[,2],
+     xlab = "PCoA1", ylab = "PCoA2",
+     main = "PCoA of Bray-Curtis Dissimilarity",
+     pch = 19, col = "pink")
+
+```
