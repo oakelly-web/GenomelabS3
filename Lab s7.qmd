@@ -1,0 +1,296 @@
+---
+title: "Lab S7"
+author: "Olivia Kelly"
+format:
+  html:
+    toc: true
+    toc_float: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false 
+  message: false 
+---
+
+### **Load the libraries**
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(DT)
+library(viridis)
+library(janitor)
+library(plotly)
+library(respirometry)
+```
+
+```{r}
+NEON_MAGs <- read_tsv("/work/pi_bio678_umass_edu/data_NEON/exported_img_bins_Gs0166454_NEON.tsv")
+
+```
+
+```{r}
+library(neonUtilities)
+
+```
+
+```{r}
+soilChem <- loadByProduct(
+  dpID='DP1.10086.001',
+  startdate = "2023-01",
+  enddate = "2023-12",
+  check.size = FALSE,
+  package='expanded')
+```
+
+```{r}
+names(soilChem)        
+head(soilChem$soilChemistry)  
+
+```
+
+```{r}
+head(soilChem$sls_soilChemistry)
+
+```
+
+```{r}
+head(soilChem$sls_metagenomicsPooling)
+
+```
+
+## 4. Co-occurrence & Network Analysis
+
+```{r}
+library(readr)
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(janitor)
+
+# Load MAGs dataset from Unity class directory
+NEON_MAGs <- read_tsv("/work/pi_bio678_umass_edu/data_NEON/exported_img_bins_Gs0166454_NEON.tsv") %>%
+  clean_names()
+
+```
+
+```{r}
+colnames(NEON_MAGs)
+head(NEON_MAGs)
+
+```
+
+```{r}
+list.files("/work/pi_bio678_umass_edu/data_NEON")
+
+
+```
+
+```{r}
+library(readr)
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(janitor)
+
+# Load MAGs metadata
+NEON_MAGs <- read_tsv("/work/pi_bio678_umass_edu/data_NEON/exported_img_bins_Gs0166454_NEON.tsv") %>%
+  clean_names()
+
+# Load soil chemistry data (RDS format)
+soilChem <- readRDS("/work/pi_bio678_umass_edu/data_NEON/soilChem.rds") %>%
+  janitor::clean_names()
+
+# Inspect
+colnames(soilChem)
+head(soilChem)
+
+```
+
+```{r}
+NEON_MAGs <- NEON_MAGs %>%
+  mutate(genome_name_clean = str_replace_all(genome_name, "-COMP", ""))
+
+```
+
+```{r}
+soilChem <- readRDS("/work/pi_bio678_umass_edu/data_NEON/soilChem.rds")
+str(soilChem)
+
+```
+
+```{r}
+soilChem <- soilChem[[1]] %>% janitor::clean_names()
+
+```
+
+```{r}
+names(soilChem)
+
+```
+
+```{r}
+unique(soilChem$analyte)
+
+
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+soilChem_summary <- soilChem %>%
+  select(uid, analyte, analyte_observed_value) %>%
+  pivot_wider(
+    names_from = analyte,
+    values_from = analyte_observed_value,
+    values_fn = mean   # average if multiple measurements per analyte
+  )
+
+head(soilChem_summary)
+
+```
+
+```{r}
+NEON_MAGs <- NEON_MAGs %>%
+  mutate(genome_name_clean = str_replace_all(genome_name, "-COMP", ""))
+
+```
+
+```{r}
+genome_MAGs_joined <- left_join(
+  soilChem_summary,
+  NEON_MAGs,
+  by = c("uid" = "genome_name_clean")
+)
+
+head(genome_MAGs_joined)
+
+```
+
+```{r}
+head(soilChem_summary$uid)
+head(NEON_MAGs$genome_name_clean)
+
+```
+
+```{r}
+library(dplyr)
+library(stringr)
+
+NEON_MAGs <- NEON_MAGs %>%
+  mutate(sample_code = str_extract(genome_name, "UNDE_\\d{3}-O-\\d{8}-DNA\\d"))
+
+```
+
+```{r}
+unique(soilChem$uid)
+
+```
+
+```{r}
+colnames(NEON_MAGs)
+
+```
+
+### MAG richness per site
+
+```{r}
+NEON_MAGs %>%
+  count(sample_code)
+
+```
+
+### Explore completeness vs contamination
+
+```{r}
+library(ggplot2)
+
+ggplot(NEON_MAGs, aes(x = bin_completeness, y = bin_contamination)) +
+  geom_point(alpha = 0.7, size = 0.1, color = "darkgreen") +   
+  theme_minimal(base_size = 16) +                              
+  labs(
+    x = "Completeness (%)",
+    y = "Contamination (%)",
+    title = "MAG Quality Scatterplot"
+  ) +
+  theme(
+    plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+    axis.title = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 14)
+  )
+
+
+```
+
+### Summarize GTDB taxonomy lineages
+
+```{r}
+NEON_MAGs %>%
+  count(gtdb_taxonomy_lineage, sort = TRUE)
+
+```
+
+```{r}
+NEON_MAGs %>%
+  select(gtdb_taxonomy_lineage, sample_code) %>%
+  head(20)
+
+```
+
+```{r}
+colnames(NEON_MAGs)
+
+```
+
+### Module Detection Workflow
+
+```{r}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(igraph)
+
+# 1. Load NEON MAGs metadata
+NEON_MAGs <- read_tsv("/work/pi_bio678_umass_edu/data_NEON/exported_img_bins_Gs0166454_NEON.tsv")
+
+# 2. Separate taxonomy into columns (note backticks for spaces in column name)
+NEON_MAGs <- NEON_MAGs %>%
+  separate(`GTDB Taxonomy Lineage`,
+           into = c("domain","phylum","class","order","family","genus"),
+           sep = "; ", remove = FALSE)
+
+# 3. Summarize MAG counts by phylum
+MAG_summary <- NEON_MAGs %>%
+  filter(!is.na(phylum)) %>%
+  count(phylum, sort = TRUE)
+
+print(MAG_summary)
+
+# 4. Build a simple network: connect phyla if they co-occur in the dataset
+edges <- combn(unique(MAG_summary$phylum), 2)
+edges_df <- data.frame(from = edges[1,], to = edges[2,])
+
+g <- graph_from_data_frame(edges_df, directed = FALSE)
+
+# 5. Detect modules (clusters of phyla)
+clusters <- cluster_louvain(g)
+membership <- data.frame(
+  Phylum = V(g)$name,
+  Module = clusters$membership
+)
+
+print(membership)
+
+# 6. Visualize modules
+plot(g,
+     layout = layout_with_fr,  # Fruchterman-Reingold layout
+     vertex.color = clusters$membership,
+     vertex.size = 10,
+     vertex.label.cex = 0.5,
+     main = "Conceptual Module Detection (NEON_MAGs)")
+
+
+
+
+```

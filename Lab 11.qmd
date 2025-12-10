@@ -1,0 +1,746 @@
+---
+title: "Lab 11"
+author: "Olivia Kelly"
+format:
+  html:
+    toc: true
+    toc_float: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false 
+  message: false 
+---
+
+```{r}
+library(tidyverse)
+```
+
+### Examples
+
+```{r}
+species <- tibble(id = c(1, 2, 3),
+              name = c("Species1", "Species2", "Species3"))
+
+abundance <- tibble(id = c(2, 3, 4),
+              abundance = c(85, 90, 95))
+```
+
+```{r}
+left_join(species, abundance, by = "id")
+```
+
+```{r}
+inner_join(species, abundance, by = "id")
+```
+
+```{r}
+full_join(species, abundance, by = "id")
+```
+
+```{r}
+library(nycflights13)
+```
+
+```{r}
+airlines
+#> # A tibble: 16 × 2
+#>   carrier name                    
+#>   <chr>   <chr>                   
+#> 1 9E      Endeavor Air Inc.       
+#> 2 AA      American Airlines Inc.  
+#> 3 AS      Alaska Airlines Inc.    
+#> 4 B6      JetBlue Airways         
+#> 5 DL      Delta Air Lines Inc.    
+#> 6 EV      ExpressJet Airlines Inc.
+#> # ℹ 10 more rows
+```
+
+```{r}
+airports
+#> # A tibble: 1,458 × 8
+#>   faa   name                            lat   lon   alt    tz dst  
+#>   <chr> <chr>                         <dbl> <dbl> <dbl> <dbl> <chr>
+#> 1 04G   Lansdowne Airport              41.1 -80.6  1044    -5 A    
+#> 2 06A   Moton Field Municipal Airport  32.5 -85.7   264    -6 A    
+#> 3 06C   Schaumburg Regional            42.0 -88.1   801    -6 A    
+#> 4 06N   Randall Airport                41.4 -74.4   523    -5 A    
+#> 5 09J   Jekyll Island Airport          31.1 -81.4    11    -5 A    
+#> 6 0A9   Elizabethton Municipal Airpo…  36.4 -82.2  1593    -5 A    
+#> # ℹ 1,452 more rows
+#> # ℹ 1 more variable: tzone <chr>
+```
+
+```{r}
+planes
+#> # A tibble: 3,322 × 9
+#>   tailnum  year type              manufacturer    model     engines
+#>   <chr>   <int> <chr>             <chr>           <chr>       <int>
+#> 1 N10156   2004 Fixed wing multi… EMBRAER         EMB-145XR       2
+#> 2 N102UW   1998 Fixed wing multi… AIRBUS INDUSTR… A320-214        2
+#> 3 N103US   1999 Fixed wing multi… AIRBUS INDUSTR… A320-214        2
+#> 4 N104UW   1999 Fixed wing multi… AIRBUS INDUSTR… A320-214        2
+#> 5 N10575   2002 Fixed wing multi… EMBRAER         EMB-145LR       2
+#> 6 N105UW   1999 Fixed wing multi… AIRBUS INDUSTR… A320-214        2
+#> # ℹ 3,316 more rows
+#> # ℹ 3 more variables: seats <int>, speed <int>, engine <chr>
+```
+
+```{r}
+weather
+#> # A tibble: 26,115 × 15
+#>   origin  year month   day  hour  temp  dewp humid wind_dir
+#>   <chr>  <int> <int> <int> <int> <dbl> <dbl> <dbl>    <dbl>
+#> 1 EWR     2013     1     1     1  39.0  26.1  59.4      270
+#> 2 EWR     2013     1     1     2  39.0  27.0  61.6      250
+#> 3 EWR     2013     1     1     3  39.0  28.0  64.4      240
+#> 4 EWR     2013     1     1     4  39.9  28.0  62.2      250
+#> 5 EWR     2013     1     1     5  39.0  28.0  64.4      260
+#> 6 EWR     2013     1     1     6  37.9  28.0  67.2      240
+#> # ℹ 26,109 more rows
+#> # ℹ 6 more variables: wind_speed <dbl>, wind_gust <dbl>, …
+```
+
+```{r}
+planes |> 
+  count(tailnum) |> 
+  filter(n > 1)
+#> # A tibble: 0 × 2
+#> # ℹ 2 variables: tailnum <chr>, n <int>
+
+weather |> 
+  count(time_hour, origin) |> 
+  filter(n > 1)
+#> # A tibble: 0 × 3
+#> # ℹ 3 variables: time_hour <dttm>, origin <chr>, n <int>
+```
+
+```{r}
+planes |> 
+  filter(is.na(tailnum))
+#> # A tibble: 0 × 9
+#> # ℹ 9 variables: tailnum <chr>, year <int>, type <chr>, manufacturer <chr>,
+#> #   model <chr>, engines <int>, seats <int>, speed <int>, engine <chr>
+
+weather |> 
+  filter(is.na(time_hour) | is.na(origin))
+#> # A tibble: 0 × 15
+#> # ℹ 15 variables: origin <chr>, year <int>, month <int>, day <int>,
+#> #   hour <int>, temp <dbl>, dewp <dbl>, humid <dbl>, wind_dir <dbl>, …
+```
+
+```{r}
+flights |> 
+  count(time_hour, carrier, flight) |> 
+  filter(n > 1)
+#> # A tibble: 0 × 4
+#> # ℹ 4 variables: time_hour <dttm>, carrier <chr>, flight <int>, n <int>
+```
+
+```{r}
+airports |>
+  count(alt, lat) |> 
+  filter(n > 1)
+#> # A tibble: 1 × 3
+#>     alt   lat     n
+#>   <dbl> <dbl> <int>
+#> 1    13  40.6     2
+```
+
+```{r}
+flights2 <- flights |> 
+  mutate(id = row_number(), .before = 1)
+flights2
+#> # A tibble: 336,776 × 20
+#>      id  year month   day dep_time sched_dep_time dep_delay arr_time
+#>   <int> <int> <int> <int>    <int>          <int>     <dbl>    <int>
+#> 1     1  2013     1     1      517            515         2      830
+#> 2     2  2013     1     1      533            529         4      850
+#> 3     3  2013     1     1      542            540         2      923
+#> 4     4  2013     1     1      544            545        -1     1004
+#> 5     5  2013     1     1      554            600        -6      812
+#> 6     6  2013     1     1      554            558        -4      740
+#> # ℹ 336,770 more rows
+#> # ℹ 12 more variables: sched_arr_time <int>, arr_delay <dbl>, …
+```
+
+```{r}
+flights2 <- flights |> 
+  select(year, time_hour, origin, dest, tailnum, carrier)
+flights2
+#> # A tibble: 336,776 × 6
+#>    year time_hour           origin dest  tailnum carrier
+#>   <int> <dttm>              <chr>  <chr> <chr>   <chr>  
+#> 1  2013 2013-01-01 05:00:00 EWR    IAH   N14228  UA     
+#> 2  2013 2013-01-01 05:00:00 LGA    IAH   N24211  UA     
+#> 3  2013 2013-01-01 05:00:00 JFK    MIA   N619AA  AA     
+#> 4  2013 2013-01-01 05:00:00 JFK    BQN   N804JB  B6     
+#> 5  2013 2013-01-01 06:00:00 LGA    ATL   N668DN  DL     
+#> 6  2013 2013-01-01 05:00:00 EWR    ORD   N39463  UA     
+#> # ℹ 336,770 more rows
+```
+
+```{r}
+flights2 |>
+  left_join(airlines)
+#> Joining with `by = join_by(carrier)`
+#> # A tibble: 336,776 × 7
+#>    year time_hour           origin dest  tailnum carrier name                
+#>   <int> <dttm>              <chr>  <chr> <chr>   <chr>   <chr>               
+#> 1  2013 2013-01-01 05:00:00 EWR    IAH   N14228  UA      United Air Lines In…
+#> 2  2013 2013-01-01 05:00:00 LGA    IAH   N24211  UA      United Air Lines In…
+#> 3  2013 2013-01-01 05:00:00 JFK    MIA   N619AA  AA      American Airlines I…
+#> 4  2013 2013-01-01 05:00:00 JFK    BQN   N804JB  B6      JetBlue Airways     
+#> 5  2013 2013-01-01 06:00:00 LGA    ATL   N668DN  DL      Delta Air Lines Inc.
+#> 6  2013 2013-01-01 05:00:00 EWR    ORD   N39463  UA      United Air Lines In…
+#> # ℹ 336,770 more rows
+
+```
+
+```{r}
+flights2 |> 
+  left_join(weather |> select(origin, time_hour, temp, wind_speed))
+#> Joining with `by = join_by(time_hour, origin)`
+#> # A tibble: 336,776 × 8
+#>    year time_hour           origin dest  tailnum carrier  temp wind_speed
+#>   <int> <dttm>              <chr>  <chr> <chr>   <chr>   <dbl>      <dbl>
+#> 1  2013 2013-01-01 05:00:00 EWR    IAH   N14228  UA       39.0       12.7
+#> 2  2013 2013-01-01 05:00:00 LGA    IAH   N24211  UA       39.9       15.0
+#> 3  2013 2013-01-01 05:00:00 JFK    MIA   N619AA  AA       39.0       15.0
+#> 4  2013 2013-01-01 05:00:00 JFK    BQN   N804JB  B6       39.0       15.0
+#> 5  2013 2013-01-01 06:00:00 LGA    ATL   N668DN  DL       39.9       16.1
+#> 6  2013 2013-01-01 05:00:00 EWR    ORD   N39463  UA       39.0       12.7
+#> # ℹ 336,770 more rows
+```
+
+```{r}
+flights2 |> 
+  left_join(planes |> select(tailnum, type, engines, seats))
+#> Joining with `by = join_by(tailnum)`
+#> # A tibble: 336,776 × 9
+#>    year time_hour           origin dest  tailnum carrier type                
+#>   <int> <dttm>              <chr>  <chr> <chr>   <chr>   <chr>               
+#> 1  2013 2013-01-01 05:00:00 EWR    IAH   N14228  UA      Fixed wing multi en…
+#> 2  2013 2013-01-01 05:00:00 LGA    IAH   N24211  UA      Fixed wing multi en…
+#> 3  2013 2013-01-01 05:00:00 JFK    MIA   N619AA  AA      Fixed wing multi en…
+#> 4  2013 2013-01-01 05:00:00 JFK    BQN   N804JB  B6      Fixed wing multi en…
+#> 5  2013 2013-01-01 06:00:00 LGA    ATL   N668DN  DL      Fixed wing multi en…
+#> 6  2013 2013-01-01 05:00:00 EWR    ORD   N39463  UA      Fixed wing multi en…
+#> # ℹ 336,770 more rows
+#> # ℹ 2 more variables: engines <int>, seats <int>
+```
+
+```{r}
+flights2 |> 
+  left_join(planes)
+#> Joining with `by = join_by(year, tailnum)`
+#> # A tibble: 336,776 × 13
+#>    year time_hour           origin dest  tailnum carrier type  manufacturer
+#>   <int> <dttm>              <chr>  <chr> <chr>   <chr>   <chr> <chr>       
+#> 1  2013 2013-01-01 05:00:00 EWR    IAH   N14228  UA      <NA>  <NA>        
+#> 2  2013 2013-01-01 05:00:00 LGA    IAH   N24211  UA      <NA>  <NA>        
+#> 3  2013 2013-01-01 05:00:00 JFK    MIA   N619AA  AA      <NA>  <NA>        
+#> 4  2013 2013-01-01 05:00:00 JFK    BQN   N804JB  B6      <NA>  <NA>        
+#> 5  2013 2013-01-01 06:00:00 LGA    ATL   N668DN  DL      <NA>  <NA>        
+#> 6  2013 2013-01-01 05:00:00 EWR    ORD   N39463  UA      <NA>  <NA>        
+#> # ℹ 336,770 more rows
+#> # ℹ 5 more variables: model <chr>, engines <int>, seats <int>, …
+```
+
+```{r}
+flights2 |> 
+  left_join(planes, join_by(tailnum))
+#> # A tibble: 336,776 × 14
+#>   year.x time_hour           origin dest  tailnum carrier year.y
+#>    <int> <dttm>              <chr>  <chr> <chr>   <chr>    <int>
+#> 1   2013 2013-01-01 05:00:00 EWR    IAH   N14228  UA        1999
+#> 2   2013 2013-01-01 05:00:00 LGA    IAH   N24211  UA        1998
+#> 3   2013 2013-01-01 05:00:00 JFK    MIA   N619AA  AA        1990
+#> 4   2013 2013-01-01 05:00:00 JFK    BQN   N804JB  B6        2012
+#> 5   2013 2013-01-01 06:00:00 LGA    ATL   N668DN  DL        1991
+#> 6   2013 2013-01-01 05:00:00 EWR    ORD   N39463  UA        2012
+#> # ℹ 336,770 more rows
+#> # ℹ 7 more variables: type <chr>, manufacturer <chr>, model <chr>, …
+```
+
+```{r}
+flights2 |> 
+  left_join(airports, join_by(dest == faa))
+#> # A tibble: 336,776 × 13
+#>    year time_hour           origin dest  tailnum carrier name                
+#>   <int> <dttm>              <chr>  <chr> <chr>   <chr>   <chr>               
+#> 1  2013 2013-01-01 05:00:00 EWR    IAH   N14228  UA      George Bush Interco…
+#> 2  2013 2013-01-01 05:00:00 LGA    IAH   N24211  UA      George Bush Interco…
+#> 3  2013 2013-01-01 05:00:00 JFK    MIA   N619AA  AA      Miami Intl          
+#> 4  2013 2013-01-01 05:00:00 JFK    BQN   N804JB  B6      <NA>                
+#> 5  2013 2013-01-01 06:00:00 LGA    ATL   N668DN  DL      Hartsfield Jackson …
+#> 6  2013 2013-01-01 05:00:00 EWR    ORD   N39463  UA      Chicago Ohare Intl  
+#> # ℹ 336,770 more rows
+#> # ℹ 6 more variables: lat <dbl>, lon <dbl>, alt <dbl>, tz <dbl>, …
+
+flights2 |> 
+  left_join(airports, join_by(origin == faa))
+#> # A tibble: 336,776 × 13
+#>    year time_hour           origin dest  tailnum carrier name               
+#>   <int> <dttm>              <chr>  <chr> <chr>   <chr>   <chr>              
+#> 1  2013 2013-01-01 05:00:00 EWR    IAH   N14228  UA      Newark Liberty Intl
+#> 2  2013 2013-01-01 05:00:00 LGA    IAH   N24211  UA      La Guardia         
+#> 3  2013 2013-01-01 05:00:00 JFK    MIA   N619AA  AA      John F Kennedy Intl
+#> 4  2013 2013-01-01 05:00:00 JFK    BQN   N804JB  B6      John F Kennedy Intl
+#> 5  2013 2013-01-01 06:00:00 LGA    ATL   N668DN  DL      La Guardia         
+#> 6  2013 2013-01-01 05:00:00 EWR    ORD   N39463  UA      Newark Liberty Intl
+#> # ℹ 336,770 more rows
+#> # ℹ 6 more variables: lat <dbl>, lon <dbl>, alt <dbl>, tz <dbl>, …
+```
+
+```{r}
+airports |> 
+  semi_join(flights2, join_by(faa == origin))
+#> # A tibble: 3 × 8
+#>   faa   name                  lat   lon   alt    tz dst   tzone           
+#>   <chr> <chr>               <dbl> <dbl> <dbl> <dbl> <chr> <chr>           
+#> 1 EWR   Newark Liberty Intl  40.7 -74.2    18    -5 A     America/New_York
+#> 2 JFK   John F Kennedy Intl  40.6 -73.8    13    -5 A     America/New_York
+#> 3 LGA   La Guardia           40.8 -73.9    22    -5 A     America/New_York
+```
+
+```{r}
+airports |> 
+  semi_join(flights2, join_by(faa == dest))
+#> # A tibble: 101 × 8
+#>   faa   name                     lat    lon   alt    tz dst   tzone          
+#>   <chr> <chr>                  <dbl>  <dbl> <dbl> <dbl> <chr> <chr>          
+#> 1 ABQ   Albuquerque Internati…  35.0 -107.   5355    -7 A     America/Denver 
+#> 2 ACK   Nantucket Mem           41.3  -70.1    48    -5 A     America/New_Yo…
+#> 3 ALB   Albany Intl             42.7  -73.8   285    -5 A     America/New_Yo…
+#> 4 ANC   Ted Stevens Anchorage…  61.2 -150.    152    -9 A     America/Anchor…
+#> 5 ATL   Hartsfield Jackson At…  33.6  -84.4  1026    -5 A     America/New_Yo…
+#> 6 AUS   Austin Bergstrom Intl   30.2  -97.7   542    -6 A     America/Chicago
+#> # ℹ 95 more rows
+```
+
+```{r}
+flights2 |> 
+  anti_join(airports, join_by(dest == faa)) |> 
+  distinct(dest)
+#> # A tibble: 4 × 1
+#>   dest 
+#>   <chr>
+#> 1 BQN  
+#> 2 SJU  
+#> 3 STT  
+#> 4 PSE
+```
+
+```{r}
+flights2 |>
+  anti_join(planes, join_by(tailnum)) |> 
+  distinct(tailnum)
+#> # A tibble: 722 × 1
+#>   tailnum
+#>   <chr>  
+#> 1 N3ALAA 
+#> 2 N3DUAA 
+#> 3 N542MQ 
+#> 4 N730MQ 
+#> 5 N9EAMQ 
+#> 6 N532UA 
+#> # ℹ 716 more rows
+```
+
+```{r}
+x <- tribble(
+  ~key, ~val_x,
+     1, "x1",
+     2, "x2",
+     3, "x3"
+)
+y <- tribble(
+  ~key, ~val_y,
+     1, "y1",
+     2, "y2",
+     4, "y3"
+)
+```
+
+```{r}
+df1 <- tibble(key = c(1, 2, 2), val_x = c("x1", "x2", "x3"))
+df2 <- tibble(key = c(1, 2, 2), val_y = c("y1", "y2", "y3"))
+```
+
+```{r}
+df1 |> 
+  inner_join(df2, join_by(key))
+#> Warning in inner_join(df1, df2, join_by(key)): Detected an unexpected many-to-many relationship between `x` and `y`.
+#> ℹ Row 2 of `x` matches multiple rows in `y`.
+#> ℹ Row 2 of `y` matches multiple rows in `x`.
+#> ℹ If a many-to-many relationship is expected, set `relationship =
+#>   "many-to-many"` to silence this warning.
+#> # A tibble: 5 × 3
+#>     key val_x val_y
+#>   <dbl> <chr> <chr>
+#> 1     1 x1    y1   
+#> 2     2 x2    y2   
+#> 3     2 x2    y3   
+#> 4     2 x3    y2   
+#> 5     2 x3    y3
+```
+
+```{r}
+x |> inner_join(y, join_by(key == key), keep = TRUE)
+#> # A tibble: 2 × 4
+#>   key.x val_x key.y val_y
+#>   <dbl> <chr> <dbl> <chr>
+#> 1     1 x1        1 y1   
+#> 2     2 x2        2 y2
+```
+
+```{r}
+df <- tibble(name = c("John", "Simon", "Tracy", "Max"))
+df |> cross_join(df)
+#> # A tibble: 16 × 2
+#>   name.x name.y
+#>   <chr>  <chr> 
+#> 1 John   John  
+#> 2 John   Simon 
+#> 3 John   Tracy 
+#> 4 John   Max   
+#> 5 Simon  John  
+#> 6 Simon  Simon 
+#> # ℹ 10 more rows
+```
+
+```{r}
+df <- tibble(id = 1:4, name = c("John", "Simon", "Tracy", "Max"))
+
+df |> inner_join(df, join_by(id < id))
+#> # A tibble: 6 × 4
+#>    id.x name.x  id.y name.y
+#>   <int> <chr>  <int> <chr> 
+#> 1     1 John       2 Simon 
+#> 2     1 John       3 Tracy 
+#> 3     1 John       4 Max   
+#> 4     2 Simon      3 Tracy 
+#> 5     2 Simon      4 Max   
+#> 6     3 Tracy      4 Max
+```
+
+```{r}
+parties <- tibble(
+  q = 1:4,
+  party = ymd(c("2022-01-10", "2022-04-04", "2022-07-11", "2022-10-03"))
+)
+```
+
+```{r}
+set.seed(123)
+employees <- tibble(
+  name = sample(babynames::babynames$name, 100),
+  birthday = ymd("2022-01-01") + (sample(365, 100, replace = TRUE) - 1)
+)
+employees
+#> # A tibble: 100 × 2
+#>   name     birthday  
+#>   <chr>    <date>    
+#> 1 Kemba    2022-01-22
+#> 2 Orean    2022-06-26
+#> 3 Kirstyn  2022-02-11
+#> 4 Amparo   2022-11-11
+#> 5 Belen    2022-03-25
+#> 6 Rayshaun 2022-01-11
+#> # ℹ 94 more rows
+```
+
+```{r}
+employees |> 
+  left_join(parties, join_by(closest(birthday >= party)))
+#> # A tibble: 100 × 4
+#>   name     birthday       q party     
+#>   <chr>    <date>     <int> <date>    
+#> 1 Kemba    2022-01-22     1 2022-01-10
+#> 2 Orean    2022-06-26     2 2022-04-04
+#> 3 Kirstyn  2022-02-11     1 2022-01-10
+#> 4 Amparo   2022-11-11     4 2022-10-03
+#> 5 Belen    2022-03-25     1 2022-01-10
+#> 6 Rayshaun 2022-01-11     1 2022-01-10
+#> # ℹ 94 more rows
+```
+
+```{r}
+employees |> 
+  anti_join(parties, join_by(closest(birthday >= party)))
+#> # A tibble: 2 × 2
+#>   name   birthday  
+#>   <chr>  <date>    
+#> 1 Maks   2022-01-07
+#> 2 Nalani 2022-01-04
+```
+
+```{r}
+parties <- tibble(
+  q = 1:4,
+  party = ymd(c("2022-01-10", "2022-04-04", "2022-07-11", "2022-10-03")),
+  start = ymd(c("2022-01-01", "2022-04-04", "2022-07-11", "2022-10-03")),
+  end = ymd(c("2022-04-03", "2022-07-11", "2022-10-02", "2022-12-31"))
+)
+parties
+#> # A tibble: 4 × 4
+#>       q party      start      end       
+#>   <int> <date>     <date>     <date>    
+#> 1     1 2022-01-10 2022-01-01 2022-04-03
+#> 2     2 2022-04-04 2022-04-04 2022-07-11
+#> 3     3 2022-07-11 2022-07-11 2022-10-02
+#> 4     4 2022-10-03 2022-10-03 2022-12-31
+```
+
+```{r}
+parties |> 
+  inner_join(parties, join_by(overlaps(start, end, start, end), q < q)) |> 
+  select(start.x, end.x, start.y, end.y)
+#> # A tibble: 1 × 4
+#>   start.x    end.x      start.y    end.y     
+#>   <date>     <date>     <date>     <date>    
+#> 1 2022-04-04 2022-07-11 2022-07-11 2022-10-02
+```
+
+```{r}
+parties <- tibble(
+  q = 1:4,
+  party = ymd(c("2022-01-10", "2022-04-04", "2022-07-11", "2022-10-03")),
+  start = ymd(c("2022-01-01", "2022-04-04", "2022-07-11", "2022-10-03")),
+  end = ymd(c("2022-04-03", "2022-07-10", "2022-10-02", "2022-12-31"))
+)
+```
+
+```{r}
+employees |> 
+  inner_join(parties, join_by(between(birthday, start, end)), unmatched = "error")
+#> # A tibble: 100 × 6
+#>   name     birthday       q party      start      end       
+#>   <chr>    <date>     <int> <date>     <date>     <date>    
+#> 1 Kemba    2022-01-22     1 2022-01-10 2022-01-01 2022-04-03
+#> 2 Orean    2022-06-26     2 2022-04-04 2022-04-04 2022-07-10
+#> 3 Kirstyn  2022-02-11     1 2022-01-10 2022-01-01 2022-04-03
+#> 4 Amparo   2022-11-11     4 2022-10-03 2022-10-03 2022-12-31
+#> 5 Belen    2022-03-25     1 2022-01-10 2022-01-01 2022-04-03
+#> 6 Rayshaun 2022-01-11     1 2022-01-10 2022-01-01 2022-04-03
+#> # ℹ 94 more rows
+```
+
+## 19.3.4 Exercises
+
+### 1. Find the 48 hours (over the course of the whole year) that have the worst delays. Cross-reference it with the `weather` data. Can you see any patterns?
+
+Yes, I can see that there is more delays without precipitation than with.
+
+```{r}
+library(nycflights13)
+library(dplyr)
+library(ggplot2)
+
+flights <- flights %>% mutate(time_hour = as.POSIXct(time_hour))
+weather <- weather %>% mutate(time_hour = as.POSIXct(time_hour))
+worst_hours <- flights %>%
+  group_by(origin, time_hour) %>%
+  summarise(avg_dep_delay = mean(dep_delay, na.rm = TRUE), .groups = "drop") %>%
+  arrange(desc(avg_dep_delay)) %>%
+  slice_head(n = 48)
+worst_weather <- worst_hours %>%
+  left_join(weather, by = c("origin", "time_hour"))
+ggplot(worst_weather, aes(x = precip, y = avg_dep_delay)) +
+  geom_point(color = "pink", size = 3) +
+  labs(title = "Worst Delay Hours vs. Precipitation",
+       x = "Precipitation (inches)",
+       y = "Average Departure Delay (minutes)") +
+  theme_minimal()
+ggplot(worst_weather, aes(x = wind_gust, y = avg_dep_delay)) +
+  geom_point(color = "blue", size = 3) +
+  labs(title = "Worst Delay Hours vs. Wind Gust",
+       x = "Wind Gust (mph)",
+       y = "Average Departure Delay (minutes)") +
+  theme_minimal()
+ggplot(worst_weather, aes(x = visib, y = avg_dep_delay)) +
+  geom_point(color = "purple", size = 3) +
+  labs(title = "Worst Delay Hours vs. Visibility",
+       x = "Visibility (miles)",
+       y = "Average Departure Delay (minutes)") +
+  theme_minimal()
+
+```
+
+### 2. Imagine you’ve found the top 10 most popular destinations using this code:
+
+How can you find all flights to those destinations? I used the code given and added popular_flights and also the semi_joint to help this.
+
+```{r}
+top_dest <- flights2 |>
+  count(dest, sort = TRUE) |>
+  head(10)
+
+top_dest
+
+
+```
+
+### 3. Does every departing flight have corresponding weather data for that hour?
+
+No, there are some missing data.
+
+```{r}
+flights %>%
+  left_join(weather, by = c("origin", "time_hour")) %>%
+  summarise(missing_weather = sum(is.na(temp)))
+
+```
+
+### 4. What do the tail numbers that don’t have a matching record in `planes` have in common? (Hint: one variable explains \~90% of the problems.)
+
+The flights that are unmatched do not have a tail number recorded.
+
+```{r}
+
+unmatched_tailnums <- flights %>%
+  anti_join(planes, by = "tailnum")
+unmatched_tailnums %>%
+  summarise(
+    total = n(),
+    missing_tailnum = sum(is.na(tailnum)),
+    percent_missing = mean(is.na(tailnum)) * 100
+  )
+
+```
+
+### 5. Add a column to `planes` that lists every `carrier` that has flown that plane. You might expect that there’s an implicit relationship between plane and airline, because each plane is flown by a single airline. Confirm or reject this hypothesis using the tools you’ve learned in previous chapters.
+
+```{r}
+
+planes_carriers <- planes %>%
+  left_join(flights, by = "tailnum") %>%
+  group_by(tailnum) %>%
+  summarise(carriers = paste(unique(carrier), collapse = ", "),
+            .groups = "drop")
+
+planes_with_carriers <- planes %>%
+  left_join(planes_carriers, by = "tailnum")
+carrier_counts <- planes_with_carriers %>%
+  mutate(num_carriers = lengths(strsplit(carriers, ", "))) %>%
+  count(num_carriers)
+
+carrier_counts
+
+
+```
+
+### 6. Add the latitude and the longitude of the origin *and* destination airport to `flights`. Is it easier to rename the columns before or after the join?
+
+```{r}
+flights_geo <- flights %>%
+  left_join(
+    airports %>% 
+      select(faa, lat, lon) %>% 
+      rename(origin_lat = lat, origin_lon = lon),
+    by = c("origin" = "faa")
+  ) %>%
+  left_join(
+    airports %>% 
+      select(faa, lat, lon) %>% 
+      rename(dest_lat = lat, dest_lon = lon),
+    by = c("dest" = "faa")
+  )
+
+head(flights_geo)
+
+
+
+
+```
+
+### 7. Compute the average delay by destination, then join on the `airports` data frame so you can show the spatial distribution of delays. Here’s an easy way to draw a map of the United States:
+
+```{r}
+
+avg_delay <- flights %>%
+  group_by(dest) %>%
+  summarise(mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+            .groups = "drop")
+
+delay_map_data <- airports %>%
+  inner_join(avg_delay, by = c("faa" = "dest"))
+
+ggplot(delay_map_data, aes(x = lon, y = lat)) +
+  borders("state") +
+  geom_point(aes(color = mean_arr_delay, size = mean_arr_delay)) +
+  coord_quickmap() +
+  scale_color_gradient(low = "pink", high = "blue") +
+  labs(title = "Average Arrival Delay by Destination Airport",
+       x = "Longitude", y = "Latitude",
+       color = "Avg Delay (min)", size = "Avg Delay (min)") +
+  theme_minimal()
+
+```
+
+### 8. What happened on June 13 2013? Draw a map of the delays, and then use Google to cross-reference with the weather.
+
+```{r}
+
+flights_june13 <- flights %>%
+  filter(year == 2013, month == 6, day == 13)
+avg_delay_june13 <- flights_june13 %>%
+  group_by(dest) %>%
+  summarise(mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+            .groups = "drop")
+delay_map_data <- airports %>%
+  inner_join(avg_delay_june13, by = c("faa" = "dest"))
+ggplot(delay_map_data, aes(x = lon, y = lat)) +
+  borders("state") +
+  geom_point(aes(color = mean_arr_delay, size = mean_arr_delay)) +
+  coord_quickmap() +
+  scale_color_gradient(low = "lightgreen", high = "blue") +
+  labs(title = "Average Arrival Delay by Destination Airport (June 13, 2013)",
+       x = "Longitude", y = "Latitude",
+       color = "Avg Delay (min)", size = "Avg Delay (min)") +
+  theme_minimal()
+
+
+flights_weather_june13 <- flights_june13 %>%
+  left_join(weather, by = c("origin", "time_hour"))
+
+flights_weather_june13 %>%
+  filter(arr_delay > 120) %>%
+  select(origin, dest, time_hour, arr_delay, precip, wind_gust, visib, temp) %>%
+  arrange(desc(arr_delay)) %>%
+  head(20)
+
+```
+
+## **19.5.5 Exercises**
+
+### 1. Can you explain what’s happening with the keys in this equi join? Why are they different?
+
+When there is no "keep=true" the join will merge the keys into one column but when there is "keep=true" then the keys will be in seperate columns.
+
+```{r}
+x |> full_join(y, join_by(key == key))
+#> # A tibble: 4 × 3
+#>     key val_x val_y
+#>   <dbl> <chr> <chr>
+#> 1     1 x1    y1   
+#> 2     2 x2    y2   
+#> 3     3 x3    <NA> 
+#> 4     4 <NA>  y3
+```
+
+```{r}
+x |> full_join(y, join_by(key == key), keep = TRUE)
+#> # A tibble: 4 × 4
+#>   key.x val_x key.y val_y
+#>   <dbl> <chr> <dbl> <chr>
+#> 1     1 x1        1 y1   
+#> 2     2 x2        2 y2   
+#> 3     3 x3       NA <NA> 
+#> 4    NA <NA>      4 y3
+```
+
+### 2. When finding if any party period overlapped with another party period we used `q < q` in the [`join_by()`](https://dplyr.tidyverse.org/reference/join_by.html)? Why? What happens if you remove this inequality?
+
+The "q \< q" is used so that there is no duplicate pairs and also no self matches. If you remove the you're code output could have duplicate pairs and self matches.

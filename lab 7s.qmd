@@ -1,0 +1,157 @@
+---
+title: "Lab 7s"
+author: "Olivia Kelly"
+format:
+  html:
+    toc: true
+    toc_float: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false 
+  message: false 
+---
+
+### Background 
+
+```{r}
+library(neonUtilities)
+library(tidyverse)
+library(lubridate)
+library(DT)
+library(viridis)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(DT)
+library(viridis)
+library(janitor)
+library(plotly)
+library(respirometry)
+```
+
+```{r}
+soilChem <- loadByProduct(
+  dpID='DP1.10086.001',
+  startdate = "2023-01",
+  enddate = "2023-12",
+  check.size = FALSE,
+  package='expanded')
+```
+
+```{r}
+soilChem$sls_metagenomicsPooling[5,'genomicsSampleID']
+```
+
+```{r}
+soilChem$sls_metagenomicsPooling[5,'collectDate']
+```
+
+```{r}
+soilChem$sls_metagenomicsPooling$genomicsPooledIDList[5]
+```
+
+```{r}
+# View(soilChem$sls_soilChemistry # No soil chemistry data for HARV
+soilChem$sls_soilMoisture |> 
+  filter(sampleID == "HARV_013-O-39-20230704") |> 
+  select(sampleID, soilMoisture)
+```
+
+```{r}
+# split up the pooled list into new columns
+genomicSamples <- soilChem$sls_metagenomicsPooling |>
+  tidyr::separate(genomicsPooledIDList, into=c("first","second","third"),sep="\\|",fill="right") |>
+  dplyr::select(genomicsSampleID,first,second,third)
+
+head(genomicSamples)
+```
+
+```{r}
+genSampleExample <- genomicSamples |> 
+  tidyr::pivot_longer(cols=c("first","second","third"),values_to = "sampleID") |>
+  dplyr::select(sampleID,genomicsSampleID) |>
+  drop_na()
+```
+
+```{r}
+chemEx <- soilChem$sls_soilMoisture |>
+  dplyr::select(sampleID,soilMoisture)
+
+## now combine the tables 
+combinedTab <- left_join(genSampleExample,chemEx, by = "sampleID") |> drop_na()
+
+## Show the data table
+head(combinedTab)
+```
+
+```{r}
+soilpH_Example <- soilChem$sls_soilpH %>%
+  dplyr::filter(sampleID %in% combinedTab$sampleID) %>%
+  dplyr::select(sampleID,soilInWaterpH,soilInCaClpH)
+
+# now join with the existing table
+combinedTab_pH <- left_join(combinedTab,soilpH_Example, by = "sampleID")
+
+# and the final
+head(combinedTab_pH)
+```
+
+```{r}
+# Remember to install the respirometry package
+library(respirometry)
+
+genome_groups_pH <- combinedTab_pH %>%
+  group_by(genomicsSampleID) %>%
+  summarize_at(c("soilInWaterpH","soilInCaClpH"), mean_pH) 
+
+head(genome_groups_pH)
+```
+
+```{r}
+genome_groups_all_mean <- combinedTab_pH %>%
+  group_by(genomicsSampleID) %>%
+  {left_join(
+    summarize_at(.,vars("soilMoisture"), mean),
+    summarize_at(.,vars("soilInWaterpH","soilInCaClpH"), mean_pH)
+  )}
+
+head(genome_groups_all_mean)
+```
+
+## 2. Environmental Correlations
+
+-   Soil chemistry vs. taxonomy: Correlate pH, moisture, temperature, and elevation with microbial diversity or specific taxa.
+
+-   Gradient analysis: Identify taxa enriched along environmental gradients (e.g., moisture or pH).
+
+-   Canonical Correspondence Analysis (CCA): Link community composition to environmental variables.
+
+Using copoilet I was given the following, I have to keep wokring through and asking more questions because there was some errors in the codes thats why they're not in code chunks becasuse I needed it to render.
+
+```{r}
+class(df)
+
+```
+
+df \<- read.csv("your_data.csv") \# or however you imported it
+
+library(dplyr) library(vegan)
+
+# Create the summarized dataframe
+
+diversity_df \<- df %\>% group_by(genomicsSampleID) %\>% summarize( shannon = diversity(abundance, index = "shannon"), \# replace 'abundance' with your counts column soil_pH = mean(soilInWaterpH, na.rm = TRUE), soil_moisture = mean(soilMoisture, na.rm = TRUE), soil_temp = mean(soilTemperature, na.rm = TRUE), elevation = mean(elevation, na.rm = TRUE) )
+
+# Now you can use diversity_df
+
+cor.test(diversity_df$soil_pH, diversity_df$shannon) cor.test(diversity_df$soil_moisture, diversity_df$shannon)
+
+library(ggplot2)
+
+ggplot(diversity_df, aes(x = soil_pH, y = shannon)) + geom_point() + geom_smooth(method = "lm") + theme_minimal()
+
+# Assuming diversity_df has shannon + soil variables
+
+cor.test(diversity_df$soil_pH, diversity_df$shannon) cor.test(diversity_df$soil_moisture, diversity_df$shannon) cor.test(diversity_df$soil_temp, diversity_df$shannon) cor.test(diversity_df$elevation, diversity_df$shannon)

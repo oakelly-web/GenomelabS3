@@ -1,0 +1,608 @@
+---
+title: "Lab 10"
+author: "Olivia Kelly"
+format:
+  html:
+    toc: true
+    toc_float: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false 
+  message: false 
+---
+
+```{r}
+library(tidyverse)
+```
+
+## Examples
+
+```{r}
+grepl("cat", c("cat", "dog", "catalog"))
+```
+
+```{r}
+gsub("dog", "cat", "dog and dog")
+```
+
+```{r}
+text <- c("apple", "banana", "cherry", "date")
+grep("a", text, value = TRUE)  # Matches strings containing 'a'
+```
+
+```{r}
+grep("^a", text, value = TRUE)  # Matches strings starting with 'a'
+```
+
+```{r}
+grep("a$", text, value = TRUE)  # Matches strings ending with 'a'
+```
+
+```{r}
+str_detect(c("apple", "banana", "cherry"), "^a")
+```
+
+```{r}
+str_replace("cat and dog", "dog", "mouse")
+```
+
+```{r}
+str_replace_all("cat and dog and dog", "dog", "mouse")
+```
+
+```{r}
+str_extract("My email is test@example.com", "[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}")
+```
+
+```{r}
+str_match("Name: John", "Name: (\\w+)")
+```
+
+```{r}
+str_split("apple,banana,cherry", ",")
+```
+
+```{r}
+library(tidyverse)
+library(babynames)
+```
+
+```{r}
+str_view(fruit, "berry")
+#>  [6] │ bil<berry>
+#>  [7] │ black<berry>
+#> [10] │ blue<berry>
+#> [11] │ boysen<berry>
+#> [19] │ cloud<berry>
+#> [21] │ cran<berry>
+#> ... and 8 more
+```
+
+```{r}
+str_view(c("a", "ab", "ae", "bd", "ea", "eab"), "a.")
+#> [2] │ <ab>
+#> [3] │ <ae>
+#> [6] │ e<ab>
+```
+
+```{r}
+str_view(fruit, "a...e")
+#>  [1] │ <apple>
+#>  [7] │ bl<ackbe>rry
+#> [48] │ mand<arine>
+#> [51] │ nect<arine>
+#> [62] │ pine<apple>
+#> [64] │ pomegr<anate>
+#> ... and 2 more
+```
+
+```{r}
+# ab? matches an "a", optionally followed by a "b".
+str_view(c("a", "ab", "abb"), "ab?")
+#> [1] │ <a>
+#> [2] │ <ab>
+#> [3] │ <ab>b
+
+# ab+ matches an "a", followed by at least one "b".
+str_view(c("a", "ab", "abb"), "ab+")
+#> [2] │ <ab>
+#> [3] │ <abb>
+
+# ab* matches an "a", followed by any number of "b"s.
+str_view(c("a", "ab", "abb"), "ab*")
+#> [1] │ <a>
+#> [2] │ <ab>
+#> [3] │ <abb>
+```
+
+```{r}
+str_view(words, "[aeiou]x[aeiou]")
+#> [284] │ <exa>ct
+#> [285] │ <exa>mple
+#> [288] │ <exe>rcise
+#> [289] │ <exi>st
+str_view(words, "[^aeiou]y[^aeiou]")
+#> [836] │ <sys>tem
+#> [901] │ <typ>e
+```
+
+```{r}
+str_view(fruit, "apple|melon|nut")
+#>  [1] │ <apple>
+#> [13] │ canary <melon>
+#> [20] │ coco<nut>
+#> [52] │ <nut>
+#> [62] │ pine<apple>
+#> [72] │ rock <melon>
+#> ... and 1 more
+str_view(fruit, "aa|ee|ii|oo|uu")
+#>  [9] │ bl<oo>d orange
+#> [33] │ g<oo>seberry
+#> [47] │ lych<ee>
+#> [66] │ purple mangost<ee>n
+```
+
+```{r}
+str_detect(c("a", "b", "c"), "[aeiou]")
+#> [1]  TRUE FALSE FALSE
+```
+
+```{r}
+babynames |> 
+  filter(str_detect(name, "x")) |> 
+  count(name, wt = n, sort = TRUE)
+#> # A tibble: 974 × 2
+#>   name           n
+#>   <chr>      <int>
+#> 1 Alexander 665492
+#> 2 Alexis    399551
+#> 3 Alex      278705
+#> 4 Alexandra 232223
+#> 5 Max       148787
+#> 6 Alexa     123032
+#> # ℹ 968 more rows
+```
+
+```{r}
+babynames |> 
+  group_by(year) |> 
+  summarize(prop_x = mean(str_detect(name, "x"))) |> 
+  ggplot(aes(x = year, y = prop_x)) + 
+  geom_line()
+```
+
+```{r}
+df <- tribble(
+  ~str,
+  "<Sheryl>-F_34",
+  "<Kisha>-F_45", 
+  "<Brandon>-N_33",
+  "<Sharon>-F_38", 
+  "<Penny>-F_58",
+  "<Justin>-M_41", 
+  "<Patricia>-F_84", 
+)
+```
+
+```{r}
+df |> 
+  separate_wider_regex(
+    str,
+    patterns = c(
+      "<", 
+      name = "[A-Za-z]+", 
+      ">-", 
+      gender = ".",
+      "_",
+      age = "[0-9]+"
+    )
+  )
+#> # A tibble: 7 × 3
+#>   name    gender age  
+#>   <chr>   <chr>  <chr>
+#> 1 Sheryl  F      34   
+#> 2 Kisha   F      45   
+#> 3 Brandon N      33   
+#> 4 Sharon  F      38   
+#> 5 Penny   F      58   
+#> 6 Justin  M      41   
+#> # ℹ 1 more row
+```
+
+```{r}
+str_detect(c("a", "b", "c"), "[aeiou]")
+#> [1]  TRUE FALSE FALSE
+```
+
+## **15.3.5** Exercises
+
+### 1. What baby name has the most vowels? What name has the highest proportion of vowels? (Hint: what is the denominator?)
+
+```{r}
+library(dplyr)
+library(stringr)
+
+babynames |>
+  count(name) |>
+  mutate(
+    vowels = str_count(name, "[aeiouAEIOU]")
+  ) |>
+  slice_max(vowels, n = 1)
+
+
+#> # A tibble: 97,310 × 4
+#>   name           vowels consonants
+#>   <chr>     <int>  <int>      <int>
+#> 1 Aaban        10      2          3
+#> 2 Aabha         5      2          3
+#> 3 Aabid         2      2          3
+#> 4 Aabir         1      2          3
+#> 5 Aabriella     5      4          5
+#> 6 Aada          1      2          2
+#> # ℹ 97,304 more rows
+```
+
+```{r}
+library(dplyr)
+library(stringr)
+
+babynames |>
+  count(name) |>
+  mutate(
+    total_letters = str_count(name, "[a-zA-Z]"),
+    vowels = str_count(name, "[aeiouAEIOU]"),
+    vowel_ratio = vowels / total_letters
+  ) |>
+  slice_max(vowel_ratio, n = 1)
+
+```
+
+### 2. Replace all forward slashes in `"a/b/c/d/e"` with backslashes. What happens if you attempt to undo the transformation by replacing all backslashes with forward slashes? (We’ll discuss the problem very soon.)
+
+When I replace the forward slashes with backwards it gives me an error: unexpected '\\\\' in "a\\". When I undo this I get the same output as my input.
+
+```{r}
+"a/b/c/d/e"
+```
+
+### 3. Implement a simple version of [`str_to_lower()`](https://stringr.tidyverse.org/reference/case.html) using [`str_replace_all()`](https://stringr.tidyverse.org/reference/str_replace.html).
+
+```{r}
+
+library(dplyr)
+library(stringr)
+
+str_to_lower_manual <- function(x) {
+  str_replace_all(x, c(
+    "A" = "a", "B" = "b", "C" = "c", "D" = "d", "E" = "e",
+    "F" = "f", "G" = "g", "H" = "h", "I" = "i", "J" = "j",
+    "K" = "k", "L" = "l", "M" = "m", "N" = "n", "O" = "o",
+    "P" = "p", "Q" = "q", "R" = "r", "S" = "s", "T" = "t",
+    "U" = "u", "V" = "v", "W" = "w", "X" = "x", "Y" = "y",
+    "Z" = "z"
+  ))
+}
+
+babynames_lower <- babynames |>
+  mutate(name = str_to_lower_manual(name))
+
+head(babynames_lower)
+
+
+
+
+
+```
+
+### 4. Create a regular expression that will match telephone numbers as commonly written in your country.
+
+```{r}
+library(stringr)
+
+phone <- regex(
+  r"(
+    \(?         # optional opening parenthesis
+    \d{3}       # area code (3 digits)
+    \)?         # optional closing parenthesis
+    [\s.-]?     # optional separator (space, dot, or dash)
+    \d{3}       # first 3 digits
+    [\s.-]?     # optional separator
+    \d{4}       # last 4 digits
+  )",
+  comments = TRUE
+)
+
+str_extract(
+  c("514-791-8141", "(123) 456 7890", "123456", "123.456.7890", "123 456 7890"),
+  phone
+)
+
+```
+
+### 
+
+## **15.4.7 Exercises**
+
+### How would you match the literal string `"'\`? How about `"$^$"`?
+
+```{r}
+str_detect("'\\?", "'\\\\\\?")     
+str_detect("$^$", "\\$\\^\\$")     
+
+```
+
+### 2. Explain why each of these patterns don’t match a `\`: `"\"`, `"\\"`, `"\\\"`.
+
+The first pattern doesn't match because its is used as an escape character but there's nothing to escape from, the second incomeplte so it doesn't work, and the third needs to match a literal so you'll need four backslashes.
+
+### 3. Given the corpus of common words in [`stringr::words`](https://stringr.tidyverse.org/reference/stringr-data.html), create regular expressions that find all words that:
+
+```{r}
+library(stringr)
+data("words", package = "stringr")
+
+```
+
+a.  library(stringr) data("words", package = "stringr")Start with “y”.
+
+```{r}
+str_subset(words, "^y")
+
+```
+
+a.  b\. Don’t start with “y”.
+
+```{r}
+str_subset(words, "^[^y]")
+
+```
+
+a.  c\. End with “x”.
+
+```{r}
+str_subset(words, "x$")
+
+```
+
+a.  d\. Are exactly three letters long. (Don’t cheat by using [`str_length()`](https://stringr.tidyverse.org/reference/str_length.html)!)
+
+```{r}
+str_subset(words, "^.{3}$")
+
+```
+
+a.  e\. Have seven letters or more.
+
+```{r}
+str_subset(words, "^.{7,}$")
+
+```
+
+a.  f\. Contain a vowel-consonant pair.
+
+```{r}
+str_subset(words, "[aeiou][^aeiou\\W]")
+
+```
+
+a.  g\. Contain at least two vowel-consonant pairs in a row.
+
+```{r}
+str_subset(words, "([aeiou][^aeiou\\W]){2,}")
+
+```
+
+a.  h\. Only consist of repeated vowel-consonant pairs.
+
+    ```{r}
+    str_subset(words, "^([aeiou][^aeiou\\W])+$")
+
+    ```
+
+    ### 4. Create 11 regular expressions that match the British or American spellings for each of the following words: airplane/aeroplane, aluminum/aluminium, analog/analogue, ass/arse, center/centre, defense/defence, donut/doughnut, gray/grey, modeling/modelling, skeptic/sceptic, summarize/summarise. Try and make the shortest possible regex!
+
+    ```{r}
+    test_words <- c("airplane", "aeroplane", "aluminum", "aluminium", "donut", "doughnut")
+    str_subset(test_words, "a(e)?roplane")
+
+    ```
+
+    ```{r}
+    library(stringr)
+    library(stringr)
+
+    test_words <- c(
+      "airplane", "aeroplane",
+      "aluminum", "aluminium",
+      "analog", "analogue",
+      "ass", "arse",
+      "center", "centre",
+      "defense", "defence",
+      "donut", "doughnut",
+      "gray", "grey",
+      "modeling", "modelling",
+      "skeptic", "sceptic",
+      "summarize", "summarise"
+    )
+
+    patterns <- list(
+      "a(ero|ir)plane",
+      "alumin(i)?um",
+      "analogu?e",
+      "a(r)?se",
+      "cent(re|er)",
+      "defen[cs]e",
+      "dough?nut",
+      "gr[ae]y",
+      "modell?ing",
+      "scept?ic",
+      "summari[sz]e"
+    )
+
+    results <- lapply(patterns, function(p) str_subset(test_words, p))
+
+    names(results) <- c(
+      "airplane/aeroplane",
+      "aluminum/aluminium",
+      "analog/analogue",
+      "ass/arse",
+      "center/centre",
+      "defense/defence",
+      "donut/doughnut",
+      "gray/grey",
+      "modeling/modelling",
+      "skeptic/sceptic",
+      "summarize/summarise"
+    )
+
+    results
+
+
+    ```
+
+    ### 5. Switch the first and last letters in `words`. Which of those strings are still `words`?
+
+    ```{r}
+    library(stringr)
+    library(stringr)
+    data("words", package = "stringr")
+
+    swap_first_last <- function(word) {
+      if (str_length(word) < 2) return(word)
+      paste0(str_sub(word, -1), str_sub(word, 2, -2), str_sub(word, 1, 1))
+    }
+
+    swapped <- sapply(words, swap_first_last)
+
+    valid <- swapped[swapped %in% words]
+
+    changed <- valid[names(valid) != valid]
+
+    changed
+
+
+
+    ```
+
+    ### 6. Describe in words what these regular expressions match: (read carefully to see if each entry is a regular expression or a string that defines a regular expression.)
+
+    a.  `^.*$`
+
+    It acts "" as quotes for words or just leave them empty.
+
+    `b. "\\{.+\\}"`
+
+    Multiple charaters like number {12345} or letters.
+
+    `c. \d{4}-\d{2}-\d{2}`
+
+    Date as year month day
+
+    `d. "\\\\{4}"`
+
+    Its four backslashes
+
+    `e. \..\..\..`
+
+    Its three dot separated characters like 1.2.3.
+
+    `f. (.)\1\1`
+
+    Its three identical charters in a row
+
+    `g. "(..)\\1"`
+
+It's a repeat of quotes terms
+
+### 7. Solve the beginner regexp crosswords at <https://regexcrossword.com/challenges/beginner>.
+
+![](Screen%20Shot%202025-11-05%20at%2011.29.48%20AM.png){width="495"}
+
+## 15.6.4 Exercise
+
+1.  
+
+    ### 1. For each of the following challenges, try solving it by using both a single regular expression, and a combination of multiple [`str_detect()`](https://stringr.tidyverse.org/reference/str_detect.html) calls.
+
+    a.  Find all `words` that start or end with `x`.
+
+    ```{r}
+    str_subset(words, "^x|x$")
+
+    ```
+
+    b\.
+
+    ```{r}
+    str_subset(words, "^[aeiou].*[^aeiou]$")
+
+    ```
+
+    c\. No
+
+    ```{r}
+    library(stringr)
+    str_subset(words, "(?=.*a)(?=.*e)(?=.*i)(?=.*o)(?=.*u)")
+
+    ```
+
+    ### 2. Construct patterns to find evidence for and against the rule “i before e except after c”?
+
+    ```{r}
+    library(stringr)
+    data("words", package = "stringr")
+
+    for_rule <- str_subset(words, "(?<!c)ie")
+
+    against_rule <- str_subset(words, "(?<!c)ei")
+
+    exceptions <- str_subset(words, "cei")
+
+    list(
+      for_rule = head(for_rule, 10),
+      against_rule = head(against_rule, 10),
+      exceptions = head(exceptions, 10)
+    )
+
+    ```
+
+    ### 3. [`colors()`](#0) contains a number of modifiers like “lightgray” and “darkblue”. How could you automatically identify these modifiers? (Think about how you might detect and then remove the colors that are modified).
+
+    To identify these modifiers you can put them before hat color you're using like "light" or "dark" but also with code.
+
+    ```{r}
+    library(stringr)
+
+    color_names <- colors()
+
+    modifiers <- c("light", "dark", "sky", "deep", "medium", "pale", "royal", "steel", "dodger", "slate", "misty", "peach", "lavender", "lemon", "orchid")
+
+    modifier_pattern <- paste0("^(", paste(modifiers, collapse = "|"), ")")
+
+    modified_colors <- str_subset(color_names, modifier_pattern)
+
+    base_colors <- str_remove(modified_colors, modifier_pattern)
+
+    unmodified_colors <- setdiff(color_names, modified_colors)
+
+    list(
+      modified_colors = head(modified_colors, 10),
+      base_colors = head(base_colors, 10),
+      unmodified_colors = head(unmodified_colors, 10)
+    )
+
+    ```
+
+    ### 4. Create a regular expression that finds any base R dataset. You can get a list of these datasets via a special use of the [`data()`](https://rdrr.io/r/utils/data.html) function: `data(package = "datasets")$results[, "Item"]`. Note that a number of old datasets are individual vectors; these contain the name of the grouping “data frame” in parentheses, so you’ll need to strip those off.
+
+    ```{r}
+    library(stringr)
+
+    ds_names <- data(package = "datasets")$results[, "Item"]
+
+    base_names <- str_extract(ds_names, "^[^(]+")
+
+    unique(base_names)
+
+    ```

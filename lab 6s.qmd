@@ -1,0 +1,57 @@
+---
+title: "Lab 6s"
+author: "Olivia Kelly"
+format:
+  html:
+    toc: true
+    toc_float: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false 
+  message: false 
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(DT)
+library(viridis)
+library(janitor)
+library(plotly)
+library(respirometry)
+```
+
+## Exercises
+
+### **1. Preparing your NEON_soilMAGs_soilChem file**
+
+### 2.
+
+The options CoPilot gave me was
+
+### Typical analyses I could then suggest in R:
+
+-   **Taxonomic composition**
+
+    -   Summarize MAG counts by phylum/class.
+
+    -   Visualize with stacked bar plots (`ggplot2`).
+
+-   **Diversity metrics**
+
+    -   Calculate alpha diversity (Shannon, Simpson) with `vegan`.
+
+    -   Compare diversity across sites or soil chemistry gradients.
+
+-   **Environmental correlations**
+
+    -   Test correlations between soil chemistry variables (pH, C:N ratio, etc.) and MAG abundances.
+
+    -   Use ordination methods (PCA, NMDS) with `vegan`.
+
+-   **Geographic patterns**
+
+    -   Map MAG distributions across sites using `ggplot2` or `leaflet`.
+
+### 3.
