@@ -33,3 +33,11 @@ I am a current senior studying biology at the University of Massachusetts Amhers
 # Link to lab 13
 
 <https://ood.unity.rc.umass.edu/rnode/cpu001.unity.rc.umass.edu/32930/p/a95eface/>
+
+```{r}
+<h2>Labs</h2>
+<ul>
+  <li><a href="LAB13.html">Lab 13</a></li>
+</ul>
+
+```
