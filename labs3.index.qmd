@@ -29,3 +29,7 @@ I am a current senior studying biology at the University of Massachusetts Amhers
 # Link to lab 7
 
 [Lab 7: COVID-19 Data Tidying and Visualization](https://jeffreyblanchard.github.io/PathoGen2025/labs/lab7_covid.html)
+
+# Link to lab 13
+
+<https://ood.unity.rc.umass.edu/rnode/cpu001.unity.rc.umass.edu/32930/p/a95eface/>
