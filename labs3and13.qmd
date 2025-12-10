@@ -1,0 +1,35 @@
+---
+project:
+  type: website
+
+website:
+  title: "GenomelabS3"
+  navbar:
+    left:
+      - text: "Home"
+        href: index.qmd
+      - text: "Lab S3"
+        href: lab_s3.qmd
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: true
+---
+
+# About Me
+
+I am a current senior studying biology at the University of Massachusetts Amherst. I live in Massachusetts and I have two golden retrievers.
+
+# Photo
+
+![Dogs](https://goldendogfarm.com/cdn/shop/files/C99G1038_2048x.jpg?v=1700100052)
+
+# Link to lab 7
+
+[Lab 7: COVID-19 Data Tidying and Visualization](https://jeffreyblanchard.github.io/PathoGen2025/labs/lab7_covid.html)
+
+# Link to lab 13
+
+<https://ood.unity.rc.umass.edu/rnode/cpu001.unity.rc.umass.edu/32930/p/a95eface/>
